@@ -130,4 +130,6 @@ See [SECURITY.md](SECURITY.md). This is experimental software with no security g
 
 ## License
 
-Not yet declared. A license will be added before the first tagged release.
+Licensed under the [Apache License, Version 2.0](LICENSE), which grants an explicit patent license alongside the copyright permissions — relevant for a protocol intended to have independent implementations.
+
+Unless you state otherwise, any contribution you intentionally submit for inclusion in this work is licensed under the same terms, with no additional conditions.

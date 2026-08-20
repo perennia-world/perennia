@@ -2,6 +2,7 @@
 name = "world-core"
 version = "0.1.1"
 edition = "2021"
+license.workspace = true
 
 [dependencies]
 sha2 = "0.10"
