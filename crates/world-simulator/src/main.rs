@@ -17,7 +17,9 @@ const ACTIONS: usize = 10_000;
 
 fn main() {
     // Deterministic actors and genesis.
-    let keys: Vec<PlayerKeypair> = (0..ACTORS as u8).map(|i| PlayerKeypair::from_seed([i + 1; 32])).collect();
+    let keys: Vec<PlayerKeypair> = (0..ACTORS as u8)
+        .map(|i| PlayerKeypair::from_seed([i + 1; 32]))
+        .collect();
 
     let build_world = || {
         let mut w = WorldState::default();
@@ -82,7 +84,10 @@ fn main() {
             payload: asset_transfer_payload(&input, keys[to_idx].public_key_bytes()),
         };
         let signature: [u8; 64] = signer.sign(&unsigned.signing_message()).try_into().unwrap();
-        let action = SignedAction { unsigned, signature };
+        let action = SignedAction {
+            unsigned,
+            signature,
+        };
         let wire = action.canonical_bytes();
 
         // Advance the generator world with the same action to know the expected outcome.
@@ -118,8 +123,15 @@ fn main() {
 
     assert_eq!(hashes[0], hashes[1]);
     assert_eq!(hashes[1], hashes[2]);
-    assert!(rejects.iter().all(|r| *r == expected_rejects), "replicas disagreed on rejections");
-    assert_eq!(gen_world.world_hash(), hashes[0], "generator and replicas diverged");
+    assert!(
+        rejects.iter().all(|r| *r == expected_rejects),
+        "replicas disagreed on rejections"
+    );
+    assert_eq!(
+        gen_world.world_hash(),
+        hashes[0],
+        "generator and replicas diverged"
+    );
     println!(
         "PASS: {} actions ({} adversarial) produced identical world hash on 3 independent replicas.",
         ACTIONS, expected_rejects

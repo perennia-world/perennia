@@ -131,7 +131,9 @@ impl<'a> Reader<'a> {
         // Major type 7: info 24 = extended simple value, 25/26/27 = float16/32/64.
         // None of these are integer arguments; all are forbidden in OWP v0.1.
         if major == 7 && (24..=27).contains(&info) {
-            return Err(CborError::ForbiddenItem("floating point or extended simple value"));
+            return Err(CborError::ForbiddenItem(
+                "floating point or extended simple value",
+            ));
         }
         let arg = match info {
             0..=23 => info as u64,
@@ -214,7 +216,9 @@ impl<'a> Reader<'a> {
                 20 => Ok(Value::Bool(false)),
                 21 => Ok(Value::Bool(true)),
                 22 => Ok(Value::Null),
-                _ => Err(CborError::ForbiddenItem("floating point, tag, or simple value")),
+                _ => Err(CborError::ForbiddenItem(
+                    "floating point, tag, or simple value",
+                )),
             },
             6 => Err(CborError::ForbiddenItem("cbor tag")),
             _ => unreachable!(),

@@ -2,6 +2,7 @@
 name = "world-simulator"
 version = "0.1.1"
 edition = "2021"
+default-run = "world-simulator"
 
 [dependencies]
 world-core = { path = "../world-core" }

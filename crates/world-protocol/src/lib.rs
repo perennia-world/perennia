@@ -162,10 +162,17 @@ pub fn validate_action_type(t: &str) -> Result<(), ProtocolError> {
         return Err(ProtocolError::InvalidType("type length out of range"));
     }
     if !bytes[0].is_ascii_lowercase() {
-        return Err(ProtocolError::InvalidType("type must start with lowercase letter"));
+        return Err(ProtocolError::InvalidType(
+            "type must start with lowercase letter",
+        ));
     }
-    if !bytes.iter().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'-' | b'_' | b'.')) {
-        return Err(ProtocolError::InvalidType("type contains forbidden character"));
+    if !bytes
+        .iter()
+        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'-' | b'_' | b'.'))
+    {
+        return Err(ProtocolError::InvalidType(
+            "type contains forbidden character",
+        ));
     }
     Ok(())
 }
@@ -196,7 +203,9 @@ impl SignedAction {
         let action = decode_signed(bytes)?;
         // Canonical-form guarantee: re-encode and compare byte-for-byte.
         if action.canonical_bytes() != bytes {
-            return Err(ProtocolError::NonCanonical("wire bytes are not deterministic encoding"));
+            return Err(ProtocolError::NonCanonical(
+                "wire bytes are not deterministic encoding",
+            ));
         }
         action.unsigned.validate_shape()?;
         Ok(action)
@@ -220,18 +229,25 @@ fn decode_signed(bytes: &[u8]) -> Result<SignedAction, ProtocolError> {
     let Value::Bytes(sig) = sig_v else {
         return Err(ProtocolError::Schema("signature must be bstr"));
     };
-    let signature: [u8; 64] = sig.try_into().map_err(|_| ProtocolError::Schema("signature must be 64 bytes"))?;
+    let signature: [u8; 64] = sig
+        .try_into()
+        .map_err(|_| ProtocolError::Schema("signature must be 64 bytes"))?;
     if pos != bytes.len() {
         return Err(ProtocolError::Schema("trailing bytes"));
     }
-    Ok(SignedAction { unsigned, signature })
+    Ok(SignedAction {
+        unsigned,
+        signature,
+    })
 }
 
 fn decode_unsigned(bytes: &[u8], pos: &mut usize) -> Result<UnsignedAction, ProtocolError> {
     let head = *bytes.get(*pos).ok_or(ProtocolError::Schema("eof"))?;
     *pos += 1;
     if head != 0xA9 {
-        return Err(ProtocolError::Schema("expected map(9) UnsignedAction; unknown keys are rejected"));
+        return Err(ProtocolError::Schema(
+            "expected map(9) UnsignedAction; unknown keys are rejected",
+        ));
     }
     expect_uint_key(bytes, pos, 0)?;
     let version = expect_uint(decode_one(bytes, pos)?)?;
@@ -265,7 +281,17 @@ fn decode_unsigned(bytes: &[u8], pos: &mut usize) -> Result<UnsignedAction, Prot
     let Value::Map(payload) = decode_one(bytes, pos)? else {
         return Err(ProtocolError::Schema("payload must be map"));
     };
-    Ok(UnsignedAction { version, actor, action_type, nonce, created_at, refs, consensus, scope, payload })
+    Ok(UnsignedAction {
+        version,
+        actor,
+        action_type,
+        nonce,
+        created_at,
+        refs,
+        consensus,
+        scope,
+        payload,
+    })
 }
 
 fn decode_one(bytes: &[u8], pos: &mut usize) -> Result<Value, ProtocolError> {
@@ -307,8 +333,14 @@ fn item_len(data: &[u8]) -> Option<usize> {
     let (arg, head): (u64, usize) = match info {
         0..=23 => (info as u64, 1),
         24 => (*data.get(1)? as u64, 2),
-        25 => (u16::from_be_bytes(data.get(1..3)?.try_into().ok()?) as u64, 3),
-        26 => (u32::from_be_bytes(data.get(1..5)?.try_into().ok()?) as u64, 5),
+        25 => (
+            u16::from_be_bytes(data.get(1..3)?.try_into().ok()?) as u64,
+            3,
+        ),
+        26 => (
+            u32::from_be_bytes(data.get(1..5)?.try_into().ok()?) as u64,
+            5,
+        ),
         27 => (u64::from_be_bytes(data.get(1..9)?.try_into().ok()?), 9),
         _ => return None,
     };
@@ -375,8 +407,14 @@ pub const ACTION_ASSET_TRANSFER: &str = "asset.transfer";
 /// { "input": {"object_id": bstr, "state_ref": bstr, "version": uint}, "to": bstr(32) }
 pub fn asset_transfer_payload(input: &OwnedObject, to: [u8; 32]) -> BTreeMap<String, Value> {
     let mut inp = BTreeMap::new();
-    inp.insert("object_id".to_owned(), Value::Bytes(input.object_id.to_vec()));
-    inp.insert("state_ref".to_owned(), Value::Bytes(input.state_ref().to_vec()));
+    inp.insert(
+        "object_id".to_owned(),
+        Value::Bytes(input.object_id.to_vec()),
+    );
+    inp.insert(
+        "state_ref".to_owned(),
+        Value::Bytes(input.state_ref().to_vec()),
+    );
     inp.insert("version".to_owned(), Value::Uint(input.version));
     let mut payload = BTreeMap::new();
     payload.insert("input".to_owned(), Value::Map(inp));
@@ -391,22 +429,34 @@ pub struct AssetTransfer {
     pub to: [u8; 32],
 }
 
-pub fn parse_asset_transfer(payload: &BTreeMap<String, Value>) -> Result<AssetTransfer, ProtocolError> {
+pub fn parse_asset_transfer(
+    payload: &BTreeMap<String, Value>,
+) -> Result<AssetTransfer, ProtocolError> {
     if payload.len() != 2 {
-        return Err(ProtocolError::Schema("asset.transfer payload must have exactly input,to"));
+        return Err(ProtocolError::Schema(
+            "asset.transfer payload must have exactly input,to",
+        ));
     }
     let Some(Value::Map(inp)) = payload.get("input") else {
         return Err(ProtocolError::Schema("missing input map"));
     };
     if inp.len() != 3 {
-        return Err(ProtocolError::Schema("input must have exactly object_id,state_ref,version"));
+        return Err(ProtocolError::Schema(
+            "input must have exactly object_id,state_ref,version",
+        ));
     }
     let object_id = match inp.get("object_id") {
-        Some(Value::Bytes(b)) => b.clone().try_into().map_err(|_| ProtocolError::Schema("object_id"))?,
+        Some(Value::Bytes(b)) => b
+            .clone()
+            .try_into()
+            .map_err(|_| ProtocolError::Schema("object_id"))?,
         _ => return Err(ProtocolError::Schema("object_id")),
     };
     let state_ref = match inp.get("state_ref") {
-        Some(Value::Bytes(b)) => b.clone().try_into().map_err(|_| ProtocolError::Schema("state_ref"))?,
+        Some(Value::Bytes(b)) => b
+            .clone()
+            .try_into()
+            .map_err(|_| ProtocolError::Schema("state_ref"))?,
         _ => return Err(ProtocolError::Schema("state_ref")),
     };
     let version = match inp.get("version") {
@@ -414,10 +464,18 @@ pub fn parse_asset_transfer(payload: &BTreeMap<String, Value>) -> Result<AssetTr
         _ => return Err(ProtocolError::Schema("version")),
     };
     let to = match payload.get("to") {
-        Some(Value::Bytes(b)) => b.clone().try_into().map_err(|_| ProtocolError::Schema("to"))?,
+        Some(Value::Bytes(b)) => b
+            .clone()
+            .try_into()
+            .map_err(|_| ProtocolError::Schema("to"))?,
         _ => return Err(ProtocolError::Schema("to")),
     };
-    Ok(AssetTransfer { object_id, state_ref, version, to })
+    Ok(AssetTransfer {
+        object_id,
+        state_ref,
+        version,
+        to,
+    })
 }
 
 pub fn hex(bytes: &[u8]) -> String {
@@ -443,16 +501,31 @@ mod tests {
     #[test]
     fn cbor_decoder_rejects_non_shortest_forms() {
         // 0 encoded as 0x18 0x00 (one-byte arg for a value < 24) is non-canonical.
-        assert_eq!(from_bytes(&[0x18, 0x00]), Err(CborError::NonCanonical("argument not shortest form")));
+        assert_eq!(
+            from_bytes(&[0x18, 0x00]),
+            Err(CborError::NonCanonical("argument not shortest form"))
+        );
         // 255 encoded with two-byte arg is non-canonical.
-        assert_eq!(from_bytes(&[0x19, 0x00, 0xFF]), Err(CborError::NonCanonical("argument not shortest form")));
+        assert_eq!(
+            from_bytes(&[0x19, 0x00, 0xFF]),
+            Err(CborError::NonCanonical("argument not shortest form"))
+        );
     }
 
     #[test]
     fn cbor_decoder_rejects_indefinite_and_floats_and_tags() {
-        assert!(matches!(from_bytes(&[0x9F, 0xFF]), Err(CborError::ForbiddenItem(_)))); // indefinite array
-        assert!(matches!(from_bytes(&[0xF9, 0x00, 0x00]), Err(CborError::ForbiddenItem(_)))); // float16
-        assert!(matches!(from_bytes(&[0xC0, 0x60]), Err(CborError::ForbiddenItem(_)))); // tag 0
+        assert!(matches!(
+            from_bytes(&[0x9F, 0xFF]),
+            Err(CborError::ForbiddenItem(_))
+        )); // indefinite array
+        assert!(matches!(
+            from_bytes(&[0xF9, 0x00, 0x00]),
+            Err(CborError::ForbiddenItem(_))
+        )); // float16
+        assert!(matches!(
+            from_bytes(&[0xC0, 0x60]),
+            Err(CborError::ForbiddenItem(_))
+        )); // tag 0
     }
 
     #[test]
@@ -471,7 +544,10 @@ mod tests {
             bad.extend(to_bytes(&Value::Text(k.into())));
             bad.extend(to_bytes(&Value::Uint(v)));
         }
-        assert_eq!(from_bytes(&bad), Err(CborError::NonCanonical("map keys not in canonical order")));
+        assert_eq!(
+            from_bytes(&bad),
+            Err(CborError::NonCanonical("map keys not in canonical order"))
+        );
     }
 
     #[test]
@@ -482,7 +558,10 @@ mod tests {
         payload.insert("neg".to_owned(), Value::Nint(9)); // -10
         payload.insert("flag".to_owned(), Value::Bool(true));
         payload.insert("none".to_owned(), Value::Null);
-        payload.insert("arr".to_owned(), Value::Array(vec![Value::Uint(1), Value::Bytes(vec![0xAB; 3])]));
+        payload.insert(
+            "arr".to_owned(),
+            Value::Array(vec![Value::Uint(1), Value::Bytes(vec![0xAB; 3])]),
+        );
         let v = Value::Map(payload);
         let bytes = to_bytes(&v);
         let decoded = from_bytes(&bytes).unwrap();

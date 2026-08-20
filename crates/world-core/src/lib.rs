@@ -59,7 +59,9 @@ pub struct Event {
 
 impl WorldState {
     pub fn register_actor(&mut self, pubkey: [u8; 32]) {
-        self.actors.entry(pubkey).or_insert(ActorState { next_nonce: 1 });
+        self.actors
+            .entry(pubkey)
+            .or_insert(ActorState { next_nonce: 1 });
     }
 
     /// Genesis-mint an object owned by `owner`. object_id derives from a label so tests/sim are deterministic.
@@ -69,7 +71,12 @@ impl WorldState {
         h.update(label);
         let object_id: [u8; 32] = h.finalize().into();
         let data_hash: [u8; 32] = Sha256::digest(label).into();
-        let obj = OwnedObject { object_id, owner, version: 0, data_hash };
+        let obj = OwnedObject {
+            object_id,
+            owner,
+            version: 0,
+            data_hash,
+        };
         self.objects.insert(object_id, obj.clone());
         obj
     }
@@ -93,7 +100,9 @@ impl WorldState {
         // Stage C: actor + anti-replay nonce.
         let actor = self.actors.get(&u.actor).ok_or(WorldError::UnknownActor)?;
         if u.nonce != actor.next_nonce {
-            return Err(WorldError::InvalidNonce { expected: actor.next_nonce });
+            return Err(WorldError::InvalidNonce {
+                expected: actor.next_nonce,
+            });
         }
 
         // Stage D: application rule.
@@ -107,7 +116,10 @@ impl WorldState {
         if !self.actors.contains_key(&t.to) {
             return Err(WorldError::UnknownActor);
         }
-        let obj = self.objects.get(&t.object_id).ok_or(WorldError::UnknownObject)?;
+        let obj = self
+            .objects
+            .get(&t.object_id)
+            .ok_or(WorldError::UnknownObject)?;
         if obj.owner != u.actor {
             return Err(WorldError::NotOwner);
         }
@@ -177,12 +189,7 @@ mod tests {
         PlayerKeypair::from_seed([seed; 32])
     }
 
-    fn transfer(
-        keys: &PlayerKeypair,
-        obj: &OwnedObject,
-        to: [u8; 32],
-        nonce: u64,
-    ) -> SignedAction {
+    fn transfer(keys: &PlayerKeypair, obj: &OwnedObject, to: [u8; 32], nonce: u64) -> SignedAction {
         let unsigned = UnsignedAction {
             version: ACTION_VERSION,
             actor: keys.public_key_bytes(),
@@ -195,7 +202,10 @@ mod tests {
             payload: asset_transfer_payload(obj, to),
         };
         let signature = keys.sign(&unsigned.signing_message());
-        SignedAction { unsigned, signature: signature.try_into().unwrap() }
+        SignedAction {
+            unsigned,
+            signature: signature.try_into().unwrap(),
+        }
     }
 
     fn world_two_actors() -> (WorldState, PlayerKeypair, PlayerKeypair, OwnedObject) {
@@ -211,7 +221,9 @@ mod tests {
     #[test]
     fn valid_transfer_moves_ownership_and_bumps_version() {
         let (mut w, a, b, obj) = world_two_actors();
-        let ev = w.apply(&transfer(&a, &obj, b.public_key_bytes(), 1)).unwrap();
+        let ev = w
+            .apply(&transfer(&a, &obj, b.public_key_bytes(), 1))
+            .unwrap();
         let now = &w.objects[&obj.object_id];
         assert_eq!(now.owner, b.public_key_bytes());
         assert_eq!(now.version, 1);
@@ -229,7 +241,10 @@ mod tests {
         let t2 = transfer(&a, &obj, c.public_key_bytes(), 2); // fresh nonce, stale input
         w.apply(&t1).unwrap();
         let err = w.apply(&t2).unwrap_err();
-        assert!(matches!(err, WorldError::StaleStateRef | WorldError::NotOwner | WorldError::AlreadyConsumed));
+        assert!(matches!(
+            err,
+            WorldError::StaleStateRef | WorldError::NotOwner | WorldError::AlreadyConsumed
+        ));
         // Ownership stayed with b.
         assert_eq!(w.objects[&obj.object_id].owner, b.public_key_bytes());
     }
@@ -239,7 +254,10 @@ mod tests {
         let (mut w, a, b, obj) = world_two_actors();
         let mallory = keypair(9);
         let mut act = transfer(&a, &obj, b.public_key_bytes(), 1);
-        act.signature = mallory.sign(&act.unsigned.signing_message()).try_into().unwrap();
+        act.signature = mallory
+            .sign(&act.unsigned.signing_message())
+            .try_into()
+            .unwrap();
         assert_eq!(w.apply(&act), Err(WorldError::InvalidSignature));
     }
 

@@ -10,12 +10,16 @@ pub struct PlayerKeypair {
 
 impl PlayerKeypair {
     pub fn generate() -> Self {
-        Self { signing: SigningKey::generate(&mut OsRng) }
+        Self {
+            signing: SigningKey::generate(&mut OsRng),
+        }
     }
 
     /// Deterministic keypair for tests, simulators, and test vectors.
     pub fn from_seed(seed: [u8; 32]) -> Self {
-        Self { signing: SigningKey::from_bytes(&seed) }
+        Self {
+            signing: SigningKey::from_bytes(&seed),
+        }
     }
 
     pub fn public_key_bytes(&self) -> [u8; 32] {
@@ -38,8 +42,12 @@ pub fn actor_id_hex(public_key: &[u8; 32]) -> String {
 }
 
 pub fn verify(public_key: &[u8; 32], message: &[u8], signature: &[u8]) -> bool {
-    let Ok(verifying_key) = VerifyingKey::from_bytes(public_key) else { return false; };
-    let Ok(sig_bytes): Result<[u8; 64], _> = signature.try_into() else { return false; };
+    let Ok(verifying_key) = VerifyingKey::from_bytes(public_key) else {
+        return false;
+    };
+    let Ok(sig_bytes): Result<[u8; 64], _> = signature.try_into() else {
+        return false;
+    };
     let signature = Signature::from_bytes(&sig_bytes);
     verifying_key.verify(message, &signature).is_ok()
 }

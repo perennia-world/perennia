@@ -26,23 +26,38 @@ fn main() {
         payload: asset_transfer_payload(&obj, bob.public_key_bytes()),
     };
     let signature: [u8; 64] = alice.sign(&unsigned.signing_message()).try_into().unwrap();
-    let signed = SignedAction { unsigned: unsigned.clone(), signature };
+    let signed = SignedAction {
+        unsigned: unsigned.clone(),
+        signature,
+    };
 
     println!("{{");
     println!("  \"description\": \"OWP v0.1 asset.transfer conformance vector (deterministic seed keys)\",");
     println!("  \"alice_seed\": \"{}\",", hex(&[1u8; 32]));
-    println!("  \"alice_pubkey\": \"{}\",", hex(&alice.public_key_bytes()));
+    println!(
+        "  \"alice_pubkey\": \"{}\",",
+        hex(&alice.public_key_bytes())
+    );
     println!("  \"bob_pubkey\": \"{}\",", hex(&bob.public_key_bytes()));
     println!("  \"object\": {{");
     println!("    \"object_id\": \"{}\",", hex(&obj.object_id));
     println!("    \"version\": {},", obj.version);
     println!("    \"data_hash\": \"{}\",", hex(&obj.data_hash));
-    println!("    \"canonical_cbor\": \"{}\",", hex(&obj.canonical_bytes()));
+    println!(
+        "    \"canonical_cbor\": \"{}\",",
+        hex(&obj.canonical_bytes())
+    );
     println!("    \"state_ref\": \"{}\"", hex(&obj.state_ref()));
     println!("  }},");
-    println!("  \"unsigned_action_cbor\": \"{}\",", hex(&unsigned.canonical_bytes()));
+    println!(
+        "  \"unsigned_action_cbor\": \"{}\",",
+        hex(&unsigned.canonical_bytes())
+    );
     println!("  \"action_id\": \"{}\",", hex(&unsigned.action_id()));
     println!("  \"signature\": \"{}\",", hex(&signature));
-    println!("  \"signed_action_cbor\": \"{}\"", hex(&signed.canonical_bytes()));
+    println!(
+        "  \"signed_action_cbor\": \"{}\"",
+        hex(&signed.canonical_bytes())
+    );
     println!("}}");
 }
