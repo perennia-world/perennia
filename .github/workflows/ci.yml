@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Must match `channel` in rust-toolchain.toml. The action does not read
       # that file, so the version is stated here too; if one moves, move both.
       - uses: dtolnay/rust-toolchain@1.82.0
