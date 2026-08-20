@@ -1,0 +1,11 @@
+/target/
+**/*.rs.bk
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+.DS_Store
+.idea/
+.vscode/

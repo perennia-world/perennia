@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "crates/world-core",
+  "crates/world-crypto",
+  "crates/world-protocol",
+  "crates/world-simulator",
+]
+resolver = "2"

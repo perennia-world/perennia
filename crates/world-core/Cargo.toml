@@ -1,0 +1,9 @@
+[package]
+name = "world-core"
+version = "0.1.1"
+edition = "2021"
+
+[dependencies]
+sha2 = "0.10"
+world-protocol = { path = "../world-protocol" }
+world-crypto = { path = "../world-crypto" }

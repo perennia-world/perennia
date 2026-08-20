@@ -1,0 +1,7 @@
+[package]
+name = "world-protocol"
+version = "0.1.1"
+edition = "2021"
+
+[dependencies]
+sha2 = "0.10"
